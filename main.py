@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os, shutil, zipfile, subprocess
 from fastapi import UploadFile, Form
+import uuid
 
 
 app = FastAPI()
