@@ -5,11 +5,8 @@
   <title>Voice Recorder</title>
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 2rem; }
-    button { margin: 0.5rem; padding: 0.5rem 1rem; font-size: 1rem; }
-    #sentence { margin-bottom: 1rem; font-size: 1.2rem; }
-
     button { margin: 0.5rem; padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
-
+    #sentence { margin-bottom: 1rem; font-size: 1.2rem; }
   </style>
 </head>
 <body>
@@ -20,18 +17,17 @@
   <button onclick="submitRecording()">Submit</button>
   <button onclick="repeatSentence()">Repeat</button>
   <button onclick="skipSentence()">Skip</button>
+  <button onclick="restartAll()">Restart All</button>
   <br><br>
   <audio id="player" controls></audio>
 
-<hr>
-<h2>Navigation</h2>
-<div style="margin-bottom: 1rem;">
-  <button onclick="window.location.href='/view'">View Recordings</button>
-  <button onclick="window.location.href='/download'">Download All</button>
-</div>
-<hr>
-
-
+  <hr>
+  <h2>Navigation</h2>
+  <div style="margin-bottom: 1rem;">
+    <button onclick="window.location.href='/view'">View Recordings</button>
+    <button onclick="window.location.href='/download'">Download All</button>
+  </div>
+  <hr>
 
   <script>
     let sentences = [];
@@ -91,7 +87,7 @@
       }
 
       const formData = new FormData();
-      formData.append('file', audioBlob, 'audio.webm'); // correct format
+      formData.append('file', audioBlob, 'audio.webm');
       formData.append('sentence', sentences[current].text);
       formData.append('index', sentences[current].index);
 
@@ -101,7 +97,7 @@
       });
 
       current++;
-      localStorage.setItem("currentIndex", current); // remember progress
+      localStorage.setItem("currentIndex", current);
       audioBlob = null;
       player.src = "";
       loadSentence();
@@ -119,6 +115,16 @@
       audioBlob = null;
       player.src = "";
       loadSentence();
+    }
+
+    function restartAll() {
+      if (confirm("Are you sure you want to restart all progress?")) {
+        current = 0;
+        localStorage.setItem("currentIndex", current);
+        audioBlob = null;
+        player.src = "";
+        loadSentence();
+      }
     }
 
     fetchSentences();
