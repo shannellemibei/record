@@ -79,6 +79,40 @@ async def get_sentences():
                 sentence_list.append({"index": int(index), "text": sentence})
     return JSONResponse(sentence_list)
 
+@app.post("/upload/manual")
+async def manual_upload(file: UploadFile, sentence: str = Form(...)):
+    # Find next available index
+    existing = [f for f in os.listdir("recordings") if f.endswith(".wav")]
+    indices = [int(f.split(".")[0]) for f in existing if f.split(".")[0].isdigit()]
+    next_index = max(indices, default=0) + 1
+
+    webm_filename = f"{next_index:04}.webm"
+    wav_filename = f"{next_index:04}.wav"
+
+    webm_path = os.path.join("recordings/webm", webm_filename)
+    wav_path = os.path.join("recordings", wav_filename)
+
+    # Save the uploaded audio
+    with open(webm_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Convert to .wav
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", webm_path, wav_path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+    except Exception as e:
+        return {"status": "error", "message": f"ffmpeg conversion failed: {e}"}
+
+    # Save to metadata
+    with open("recordings/metadata.csv", "a", encoding="utf-8") as f:
+        f.write(f"{wav_filename}|{sentence.strip()}|{sentence.strip()}\n")
+
+    return {"status": "ok", "index": next_index}
+
+
 @app.get("/")
 async def main():
     with open("static/index.html", "r") as f:
