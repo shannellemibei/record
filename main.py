@@ -16,6 +16,9 @@ app.add_middleware(
 
 # Serve static frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
+if not os.path.exists("recordings"):
+    os.makedirs("recordings/webm", exist_ok=True)
+
 app.mount("/recordings", StaticFiles(directory="recordings"), name="recordings")
 
 
