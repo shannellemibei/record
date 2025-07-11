@@ -24,7 +24,7 @@ os.makedirs("recordings", exist_ok=True)
 
 @app.post("/upload")
 async def upload(file: UploadFile, sentence: str = Form(...), index: int = Form(...)):
-    filename = f"{index:04}.wav"
+    filename = f"{index:04}.webm"
     filepath = os.path.join("recordings", filename)
     with open(filepath, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
