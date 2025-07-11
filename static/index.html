@@ -7,6 +7,9 @@
     body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 2rem; }
     button { margin: 0.5rem; padding: 0.5rem 1rem; font-size: 1rem; }
     #sentence { margin-bottom: 1rem; font-size: 1.2rem; }
+
+    button { margin: 0.5rem; padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+
   </style>
 </head>
 <body>
@@ -19,6 +22,18 @@
   <button onclick="skipSentence()">Skip</button>
   <br><br>
   <audio id="player" controls></audio>
+
+<hr>
+<h2>Navigation</h2>
+<div style="margin-bottom: 1rem;">
+  <button onclick="window.location.href='/view'">View Recordings</button>
+  <button onclick="window.location.href='/download'">Download All</button>
+  <button onclick="window.location.href='/recordings/'">WAV Folder</button>
+  <button onclick="window.location.href='/recordings/webm/'">WEBM Folder</button>
+</div>
+<hr>
+
+
 
   <script>
     let sentences = [];

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>All Recordings</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    .entry { margin-bottom: 2rem; }
+    audio { display: block; margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>All Recordings (Grouped by Index)</h1>
+  <div id="list"></div>
+
+  <script>
+    fetch("/files")
+      .then(res => res.json())
+      .then(data => {
+        const list = document.getElementById("list");
+        data.forEach(file => {
+          const div = document.createElement("div");
+          div.className = "entry";
+          div.innerHTML = `
+            <strong>Index:</strong> ${file.index}<br>
+            <strong>Sentence:</strong> "${file.sentence}"<br><br>
+            ${file.wav ? `<strong>WAV:</strong><br><audio controls src="${file.wav}"></audio><a href="${file.wav}" download>Download WAV</a><br><br>` : ""}
+            ${file.webm ? `<strong>WEBM:</strong><br><audio controls src="${file.webm}"></audio><a href="${file.webm}" download>Download WEBM</a>` : ""}
+          `;
+          list.appendChild(div);
+        });
+      });
+  </script>
+</body>
+</html>

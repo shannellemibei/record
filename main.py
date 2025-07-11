@@ -16,6 +16,8 @@ app.add_middleware(
 
 # Serve static frontend
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/recordings", StaticFiles(directory="recordings"), name="recordings")
+
 
 # Ensure directories exist
 os.makedirs("recordings", exist_ok=True)
@@ -112,8 +114,53 @@ async def manual_upload(file: UploadFile, sentence: str = Form(...)):
 
     return {"status": "ok", "index": next_index}
 
+@app.get("/files")
+async def list_files():
+    index_map = {}
+
+    # Read metadata.csv for sentence lookup
+    metadata = {}
+    metadata_path = os.path.join("recordings", "metadata.csv")
+    if os.path.exists(metadata_path):
+        with open(metadata_path, "r", encoding="utf-8") as f:
+            for line in f:
+                parts = line.strip().split("|")
+                if len(parts) >= 2:
+                    filename, sentence = parts[0], parts[1]
+                    index = filename.split(".")[0]
+                    metadata[index] = sentence
+
+    # Map .wav files
+    for fname in os.listdir("recordings"):
+        if fname.endswith(".wav"):
+            index = fname.split(".")[0]
+            index_map.setdefault(index, {})["wav"] = f"/recordings/{fname}"
+
+    # Map .webm files
+    for fname in os.listdir("recordings/webm"):
+        if fname.endswith(".webm"):
+            index = fname.split(".")[0]
+            index_map.setdefault(index, {})["webm"] = f"/recordings/webm/{fname}"
+
+    # Build full record list
+    result = []
+    for index in sorted(index_map.keys()):
+        result.append({
+            "index": index,
+            "sentence": metadata.get(index, "(No sentence found)"),
+            "wav": index_map[index].get("wav"),
+            "webm": index_map[index].get("webm")
+        })
+
+    return JSONResponse(result)
+
 
 @app.get("/")
 async def main():
     with open("static/index.html", "r") as f:
+        return HTMLResponse(f.read())
+
+@app.get("/view")
+async def view_page():
+    with open("static/files.html", "r") as f:
         return HTMLResponse(f.read())
