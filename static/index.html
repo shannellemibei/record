@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Recorder</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 2rem; }
+    button { margin: 0.5rem; padding: 0.5rem 1rem; font-size: 1rem; }
+    #sentence { margin-bottom: 1rem; font-size: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>Voice Recorder</h1>
+  <div id="sentence"></div>
+  <button onclick="startRecording()">Start</button>
+  <button onclick="stopRecording()">Stop</button>
+  <button onclick="submitRecording()">Submit</button>
+  <button onclick="repeatSentence()">Repeat</button>
+  <button onclick="skipSentence()">Skip</button>
+  <br><br>
+  <audio id="player" controls></audio>
+
+  <script>
+  let sentences = [];
+  let current = 0;
+  let mediaRecorder;
+  let audioChunks = [];
+  let audioBlob;
+  const sentenceDiv = document.getElementById('sentence');
+  const player = document.getElementById('player');
+
+  async function fetchSentences() {
+    const res = await fetch('/sentences');
+    const data = await res.json();
+    sentences = data;
+    loadSentence();
+  }
+
+  function loadSentence() {
+    if (current < sentences.length) {
+      sentenceDiv.textContent = `Sentence [${current + 1}/${sentences.length}]: "${sentences[current].text}"`;
+    } else {
+      sentenceDiv.textContent = "All done! Thank you.";
+    }
+  }
+
+  async function startRecording() {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+      player.src = URL.createObjectURL(audioBlob);
+      player.load();
+    };
+    mediaRecorder.start();
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+      mediaRecorder.stop();
+    }
+  }
+
+  async function submitRecording() {
+    if (!audioBlob) {
+      alert("Please record and review before saving.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'audio.wav');
+    formData.append('sentence', sentences[current].text);
+    formData.append('index', sentences[current].index);
+
+    await fetch('/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    current++;
+    audioBlob = null;
+    player.src = "";
+    loadSentence();
+  }
+
+  function repeatSentence() {
+    player.src = "";
+    audioBlob = null;
+    loadSentence();
+  }
+
+  function skipSentence() {
+    current++;
+    audioBlob = null;
+    player.src = "";
+    loadSentence();
+  }
+
+  fetchSentences();
+</script>
+
+</body>
+</html>
