@@ -22,6 +22,21 @@
   <audio id="player" controls></audio>
 
   <hr>
+<h2>Manual Upload</h2>
+<form id="manualUploadForm">
+  <label for="manualFile">Audio File (.webm):</label><br>
+  <input type="file" id="manualFile" name="file" accept="audio/*" required><br><br>
+
+
+  <label for="manualSentence">Sentence:</label><br>
+  <textarea id="manualSentence" name="sentence" rows="2" style="width:100%;" required></textarea><br><br>
+
+  <button type="submit">Upload</button>
+</form>
+<div id="manualStatus"></div>
+
+
+  <hr>
   <h2>Navigation</h2>
   <div style="margin-bottom: 1rem;">
     <button onclick="window.location.href='/view'">View Recordings</button>
@@ -128,6 +143,42 @@
     }
 
     fetchSentences();
+
+    document.getElementById("manualUploadForm").addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const fileInput = document.getElementById("manualFile");
+  const sentenceInput = document.getElementById("manualSentence");
+  const statusDiv = document.getElementById("manualStatus");
+
+  if (!fileInput.files.length) {
+    statusDiv.textContent = "Please select a file.";
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+  formData.append("sentence", sentenceInput.value);
+
+  try {
+    const response = await fetch("/upload/manual", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+    if (result.status === "ok") {
+      statusDiv.textContent = `Uploaded successfully as index ${result.index}`;
+      fileInput.value = "";
+      sentenceInput.value = "";
+    } else {
+      statusDiv.textContent = `Upload failed: ${result.message}`;
+    }
+  } catch (err) {
+    statusDiv.textContent = "Upload error: " + err.message;
+  }
+});
+
   </script>
 </body>
 </html>

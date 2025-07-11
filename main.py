@@ -3,6 +3,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os, shutil, zipfile, subprocess
+from fastapi import UploadFile, Form
+
 
 app = FastAPI()
 
@@ -84,38 +86,49 @@ async def get_sentences():
                 sentence_list.append({"index": int(index), "text": sentence})
     return JSONResponse(sentence_list)
 
+
 @app.post("/upload/manual")
 async def manual_upload(file: UploadFile, sentence: str = Form(...)):
-    # Find next available index
+    os.makedirs("recordings/webm", exist_ok=True)
+    os.makedirs("recordings", exist_ok=True)
+
+    # Use a unique temp filename with original extension
+    ext = os.path.splitext(file.filename)[1].lower()
+    temp_id = uuid.uuid4().hex[:8]
+    input_filename = f"{temp_id}{ext}"
+    input_path = os.path.join("recordings/webm", input_filename)
+
+    with open(input_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Find next WAV index
     existing = [f for f in os.listdir("recordings") if f.endswith(".wav")]
     indices = [int(f.split(".")[0]) for f in existing if f.split(".")[0].isdigit()]
     next_index = max(indices, default=0) + 1
 
-    webm_filename = f"{next_index:04}.webm"
     wav_filename = f"{next_index:04}.wav"
-
-    webm_path = os.path.join("recordings/webm", webm_filename)
     wav_path = os.path.join("recordings", wav_filename)
 
-    # Save the uploaded audio
-    with open(webm_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    # Convert to .wav
+    # Convert to WAV using FFmpeg
     try:
         subprocess.run(
-            ["ffmpeg", "-y", "-i", webm_path, wav_path],
+            ["ffmpeg", "-y", "-i", input_path, wav_path],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
+            stderr=subprocess.DEVNULL,
+            check=True
         )
-    except Exception as e:
-        return {"status": "error", "message": f"ffmpeg conversion failed: {e}"}
+        os.remove(input_path)
 
-    # Save to metadata
+    except subprocess.CalledProcessError:
+        return JSONResponse(status_code=500, content={"status": "error", "message": "FFmpeg conversion failed."})
+
+    # Save metadata
     with open("recordings/metadata.csv", "a", encoding="utf-8") as f:
         f.write(f"{wav_filename}|{sentence.strip()}|{sentence.strip()}\n")
 
     return {"status": "ok", "index": next_index}
+
+
 
 @app.get("/files")
 async def list_files():
